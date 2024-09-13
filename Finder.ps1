@@ -46,7 +46,7 @@ foreach ($sitekey in $siteCodes.Keys) {
         $fgSubColor = $fgWarn
         $dateStr = $rJson.availableSlots[0].startTimestamp
         $SiteDate = [datetime]$rJson.availableSlots[0].startTimestamp
-        $msg = ([datetime]$dateStr).ToString('dd MMM yyyy')
+        $msg = ([datetime]$dateStr).ToString('dd MMM yyyy HH:ss')
         if ($SiteCodesPrior.ContainsKey($sitekey)) {
             if ($null -eq $SiteCodesPrior[$sitekey]) {
                 $fgSubColor = $fgGood
@@ -59,8 +59,12 @@ foreach ($sitekey in $siteCodes.Keys) {
                 }
                 if ($PriorDate -ne $SiteDate) {
                     $diffDate = New-TimeSpan -Start $PriorDate -End $SiteDate
-                    $msg += " ($($PriorDate.ToString('dd MMM yyyy'))"
-                    $msg += " $($diffDate.Days) DaysDiff)"
+                    # $msg += " ($($PriorDate.ToString('dd MMM yyyy'))"
+                    if ($diffDate.Days -ne 0) {
+                        $msg += " ($($diffDate.Days) Days)"
+                    } else {
+                        $msg += " ($($diffDate.Hours) Hours)"
+                    }
                 }
             }
         }
