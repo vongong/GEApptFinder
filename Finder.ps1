@@ -46,7 +46,7 @@ foreach ($sitekey in $siteCodes.Keys) {
         $fgSubColor = $fgWarn
         $dateStr = $rJson.availableSlots[0].startTimestamp
         $SiteDate = [datetime]$rJson.availableSlots[0].startTimestamp
-        $msg = ([datetime]$dateStr).ToString('dd MMM yyyy HH:ss')
+        $msg = ([datetime]$dateStr).ToString('dd MMM yyyy HH:mm')
         if ($SiteCodesPrior.ContainsKey($sitekey)) {
             if ($null -eq $SiteCodesPrior[$sitekey]) {
                 $fgSubColor = $fgGood
