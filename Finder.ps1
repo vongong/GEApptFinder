@@ -37,22 +37,31 @@ foreach ($sitekey in $siteCodes.Keys) {
     $siteCode = $SiteCodes[$sitekey]
     $SchedulerUri = $SchedulerUriBase.Replace("{{Code}}",$siteCode)
     $resp = Invoke-WebRequest -Uri $SchedulerUri
-    $rJson = $resp.Content | ConvertFrom-Json    
+    $rJson = $resp.Content | ConvertFrom-Json
     $fgColor = $fgDef
     $fgSubColor = $fgDef
     if ($rJson.availableSlots.Length -eq 0) {
-        $msg = "No Available Slots"        
-    } else {        
+        $msg = "No Available Slots"
+    } else {
         $fgSubColor = $fgWarn
         $dateStr = $rJson.availableSlots[0].startTimestamp
+        $SiteDate = [datetime]$rJson.availableSlots[0].startTimestamp
         $msg = ([datetime]$dateStr).ToString('dd MMM yyyy')
         if ($SiteCodesPrior.ContainsKey($sitekey)) {
-            if ($SiteCodesPrior[$sitekey] -ne $dateStr) {
+            if ($null -eq $SiteCodesPrior[$sitekey]) {
                 $fgSubColor = $fgGood
-                $fgColor = $fgBold
-                $dateStr = "New " + $dateStr
-                $PriorDate = ([datetime]$SiteCodesPrior[$sitekey]).ToString('dd MMM yyyy')
-                $msg += " (Prev $PriorDate)"
+                $msg += " (Prev None)"
+            } else {
+                $PriorDate = [datetime]$SiteCodesPrior[$sitekey]
+                if ($PriorDate -gt $SiteDate) {
+                    $fgSubColor = $fgGood
+                    $fgColor = $fgBold
+                }
+                if ($PriorDate -ne $SiteDate) {
+                    $diffDate = New-TimeSpan -Start $PriorDate -End $SiteDate
+                    $msg += " ($($PriorDate.ToString('dd MMM yyyy'))"
+                    $msg += " $($diffDate.Days) DaysDiff)"
+                }
             }
         }
     }
