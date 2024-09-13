@@ -5,7 +5,7 @@ $fgWarn = "Yellow"
 # $fgErr = "Red"
 $fgDef = "Gray"
 $SchedulerUriBase = "https://ttp.cbp.dhs.gov/schedulerapi/slot-availability?locationId={{Code}}"
-$SiteCodeFilePath = ".\SiteCodes.json"
+$SiteCodeFilePath = ".\data\SiteCodes.json"
 $histFileTemplate = ".\out\SiteCodesHist{{value}}.json"
 $histFile1 = $histFileTemplate.Replace("{{value}}","-1")
 $histFile = $histFileTemplate.Replace("{{value}}","")
