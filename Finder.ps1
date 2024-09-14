@@ -1,17 +1,50 @@
+<#
+.DESCRIPTION
+This scripts scraps data from the Global Entry Scheduler
 
+.PARAMETER SiteCodeFilePath
+This contains filepath to Sites Code Data. Default: .\data\SiteCodes.json
+
+.PARAMETER histFolder
+This contains filepath to the history folder. Default: .\out
+
+.EXAMPLE
+.\Finder.ps1
+
+.\Finder.ps1 -SiteCodeFilePath ".\data\myCodes.json"
+
+.\Finder.ps1 -histFolder ".\hist"
+
+#>
+
+param (
+    [string] $SiteCodeFilePath = ".\data\SiteCodes.json"
+    , [string] $histFolder = ".\out"
+)
+
+# Variable
 $fgDef = "Gray"
 $fgBold = "White"
 $fgGood = "Green"
 $fgWarn = "Yellow"
 $fgErr = "Red"
-$dateFormat = "dd MMM yyyy HH:mm"
-$SchedulerUriBase = "https://ttp.cbp.dhs.gov/schedulerapi/slot-availability?locationId={{Code}}"
-$SiteCodeFilePath = ".\data\SiteCodes.json"
-$histFileTemplate = ".\out\SiteCodesHist{{value}}.json"
-$histFile1 = $histFileTemplate.Replace("{{value}}","-1")
-$histFile = $histFileTemplate.Replace("{{value}}","")
+$typefull = "full"
+$typeopen = "open"
+$ArrType = 0
+$ArrDate = 1
+$sep = "__"
+$dateFormatDisplay = "dd MMM yyyy HH:mm"
+$dateFormatStore = "yyyy-MM-ddTHH:mm"
+$idStr = "{{Code}}"
+$SchedulerUriBase = "https://ttp.cbp.dhs.gov/schedulerapi/slot-availability?locationId=$idStr"
+$histFileTemplate = "SiteCodesHist$idStr.json"
+$histFile1 = Join-Path -Path $histFolder -ChildPath $histFileTemplate.Replace($idStr,"-1")
+$histFile = Join-Path -Path $histFolder -ChildPath $histFileTemplate.Replace($idStr,"")
 
 Write-Host "Global Entry Appointment Finder" -ForegroundColor $fgBold
+Write-Host "Parameters"
+Write-Host "  SiteCodeFilePath = $SiteCodeFilePath"
+Write-Host "  histFolder = $histFolder"
 Write-Host "Loading Site List"
 if (-not (Test-Path -Path $SiteCodeFilePath -PathType Leaf)) {
     $msg = "Can't find $SiteCodeFilePath"
@@ -21,9 +54,9 @@ if (-not (Test-Path -Path $SiteCodeFilePath -PathType Leaf)) {
 $SiteCodes = Get-Content -Path $SiteCodeFilePath | ConvertFrom-Json -AsHashtable
 $SiteCodesPrior = $SiteCodes.Clone()
 
-if (-not (Test-Path -Path (Split-Path $histFile) )) {
+if (-not (Test-Path -Path $histFolder )) {
     Write-Host "Create folder for History"
-    $msg = mkdir (Split-Path $histFile)
+    $msg = mkdir $histFolder
 }
 if (Test-Path -Path $histFile -PathType Leaf) {
     Write-Host "Loading History"
@@ -31,33 +64,48 @@ if (Test-Path -Path $histFile -PathType Leaf) {
     Copy-Item -Path $histFile -Destination $histFile1 -Force
 }
 
-Write-Host "Pull Data"
+Write-Host "Pull Data " -NoNewline
 $SiteCodesCurr = $SiteCodes.Clone()
 $SiteCodes.Keys | Foreach-Object -ThrottleLimit 5 -Parallel {
     $key = $_
     $SiteCodes = $using:SiteCodes
     $SiteCodesCurr = $using:SiteCodesCurr
     $SchedulerUriBase = $using:SchedulerUriBase
+    $locationId = $using:idStr
     $value = $SiteCodes[$key]
-    $SchedulerUri = $SchedulerUriBase.Replace("{{Code}}",$value)
+    $SchedulerUri = $SchedulerUriBase.Replace($locationId,$value)
 
     $resp = Invoke-WebRequest -Uri $SchedulerUri
-    $rJson = $resp.Content | ConvertFrom-Json
-    $SiteCodesCurr[$key] = $rJson.availableSlots[0].startTimestamp
+    $rJson = $resp.Content | ConvertFrom-Json    
+    $dataStr = $using:typeOpen + $using:sep + $rJson.availableSlots[0].startTimestamp
+    if ($rJson.availableSlots.Length -eq 0) {
+        $dataStr = $using:typeFull + $using:sep + $rJson.lastPublishedDate.ToString($using:dateFormatStore)
+    }
+    $SiteCodesCurr[$key] = $dataStr    
+    Write-Host "." -NoNewline
 }
+Write-Host "."
 
 Write-Host "Process Data"
 foreach ($key in $SiteCodes.Keys) {
     $fgColor = $fgDef
     $fgSubColor = $fgDef
-    if ($SiteCodesCurr[$key].Length -eq 0) {
-        $msg = "No Available Slots"
+    $currArr = $SiteCodesCurr[$key] -Split $sep
+    $CurrDate = [datetime]$currArr[$ArrDate]
+    if ($currArr[$ArrType] -eq $typefull) {
+        $msg = "None Available until " + $CurrDate.ToString($dateFormatDisplay)
     } else {
-        $fgSubColor = $fgWarn
-        $CurrDate = [datetime]$SiteCodesCurr[$key]
-        $msg = $CurrDate.ToString($dateFormat)
-        if ($SiteCodesPrior[$key] -ne $SiteCodesCurr[$key]) {
-            $PriorDate = [datetime]$SiteCodesPrior[$key]
+        $fgSubColor = $fgWarn        
+        $msg = $CurrDate.ToString($dateFormatDisplay)
+        $PriorArr = $SiteCodesPrior[$key].Split("__")        
+        if ($PriorArr.Length -eq 2) {            
+            $PriorDate = [datetime]$PriorArr[$ArrDate]
+        } elseif ($PriorArr.Length -eq 1) {
+            $PriorDate = $SiteCodesPrior[$key]
+        } else {
+            $PriorDate = $CurrDate
+        }
+        if ($PriorDate -ne $CurrDate) {            
             $diffDate = New-TimeSpan -Start $PriorDate -End $CurrDate
             if ($PriorDate -gt $CurrDate) {
                 $fgSubColor = $fgGood
