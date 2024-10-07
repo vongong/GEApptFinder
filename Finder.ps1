@@ -24,6 +24,8 @@ A Using variable cannot be retrieved.
 param (
     [string] $SiteCodeFilePath = ".\data\SiteCodes.json"
     , [string] $histFolder = ".\out"
+    , [int] $retryCount = 3
+    , [int] $retryInterval = 3
 )
 
 # Variable
@@ -79,7 +81,7 @@ $SiteCodes.Keys | Foreach-Object -ThrottleLimit 5 -Parallel {
     $value = $SiteCodes[$key]
     $SchedulerUri = $SchedulerUriBase.Replace($locationId,$value)
 
-    $resp = Invoke-WebRequest -Uri $SchedulerUri
+    $resp = Invoke-WebRequest -Uri $SchedulerUri -MaximumRetryCount $using:retryCount -RetryIntervalSec $using:retryInterval
     $rJson = $resp.Content | ConvertFrom-Json    
     $dataStr = $using:typeOpen + $using:sep + $rJson.availableSlots[0].startTimestamp
     if ($rJson.availableSlots.Length -eq 0) {
