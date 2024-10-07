@@ -13,6 +13,10 @@ This contains filepath to the history folder. Default: .\out
 
 .\Finder.ps1 -SiteCodeFilePath ".\data\myCodes.json"
 
+.\Finder.ps1 -SiteCodeFilePath ".\data\SiteCodes-test.json"
+
+A Using variable cannot be retrieved. 
+
 .\Finder.ps1 -histFolder ".\hist"
 
 #>

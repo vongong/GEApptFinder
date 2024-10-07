@@ -1,6 +1,6 @@
 # GEApptFinder
 
-This scripts queries the appointment scheduler. The sites codes that it will query are in SiteCodes.json
+This scripts queries the appointment scheduler. The sites codes that it will query are in SiteCodes.json. The schduler api base is https://ttp.cbp.dhs.gov/schedulerapi/slot-availability?locationId=xxx
 
 ## SiteCodes.json Format
 
