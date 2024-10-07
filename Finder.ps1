@@ -97,13 +97,14 @@ foreach ($key in $SiteCodes.Keys) {
     } else {
         $fgSubColor = $fgWarn        
         $msg = $CurrDate.ToString($dateFormatDisplay)
-        $PriorArr = $SiteCodesPrior[$key].Split("__")        
-        if ($PriorArr.Length -eq 2) {            
-            $PriorDate = [datetime]$PriorArr[$ArrDate]
-        } elseif ($PriorArr.Length -eq 1) {
-            $PriorDate = $SiteCodesPrior[$key]
-        } else {
-            $PriorDate = $CurrDate
+        $PriorDate = $CurrDate
+        if ($SiteCodesPrior.ContainsKey($key)) {            
+            $PriorArr = $SiteCodesPrior[$key].Split("__")        
+            if ($PriorArr.Length -eq 2) {            
+                $PriorDate = [datetime]$PriorArr[$ArrDate]
+            } elseif ($PriorArr.Length -eq 1) {
+                $PriorDate = $SiteCodesPrior[$key]
+            }
         }
         if ($PriorDate -ne $CurrDate) {            
             $diffDate = New-TimeSpan -Start $PriorDate -End $CurrDate
